@@ -30,7 +30,8 @@ static void dropSystemCache() {
 
 #define MYBUFSIZ 5000
 #define LOCCNT 1000
-int doPass(int fd, char c, uint64_t maxLoc) {
+#define NUMPASSES 3
+double doPass(int fd, char c, uint64_t maxLoc) {
 	char buf[MYBUFSIZ];
 	uint64_t locs[LOCCNT];
 
@@ -71,8 +72,9 @@ int doPass(int fd, char c, uint64_t maxLoc) {
 			}
 	}
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds >(std::chrono::steady_clock::now() - startT).count() / 1000.0;
-	cout << "Test completed in " << duration << " seconds. Speed=" << (((double)(MYBUFSIZ*LOCCNT)/duration)/(1024*1024)) << "MB/s." << endl;
-	return 0;
+	double speed = ((double)(MYBUFSIZ*LOCCNT)/duration)/(1024*1024);
+	cout << "Test completed in " << duration << " seconds. Speed=" << speed << "MB/s." << endl;
+	return speed;
 }
 
 int main(int argc, char *argv[]) {
@@ -80,17 +82,13 @@ int main(int argc, char *argv[]) {
 	uint64_t diskSize = 0;
 	if(argc >= 2) fd = open(argv[1],O_RDWR|O_LARGEFILE);
 	else fd = open("/dev/nbd0",O_RDWR|O_LARGEFILE);
-	if(fd == -1) {
-		cerr << "Error opening file" << endl;
-		return 0;
-	}
+	if(fd == -1) { cerr << "Error opening file" << endl; return 0; }
 	if(argc == 3) { diskSize = atol(argv[2]); cout << "Setting DiskSize=" << diskSize << endl; }
 	if(diskSize == 0) {
 		struct stat fd_stat;
 		if(fstat(fd,&fd_stat)) { cerr << "Error getting the stats on the file: " << strerror(errno) << endl; return -1; }
-		if(S_ISBLK(fd_stat.st_mode)) {
-			ioctl(fd,BLKGETSIZE64, &diskSize);
-		} else {
+		if(S_ISBLK(fd_stat.st_mode)) ioctl(fd,BLKGETSIZE64, &diskSize);
+		else {
 			cout << "File stats: blksize=" << fd_stat.st_blksize << " blkcnt=" << fd_stat.st_blocks << endl;
 			diskSize = fd_stat.st_blksize * fd_stat.st_blocks;
 		}
@@ -98,12 +96,14 @@ int main(int argc, char *argv[]) {
 
 	if(diskSize == 0) { cerr << "DiskSize==0, we can't deal with that." << endl; return -1; }
 	cout << "Running test with diskSize=" << diskSize << endl;
+	double curSpeed, totSpeed = 0;
 	auto startT = std::chrono::steady_clock::now();
-	if(doPass(fd,'a',diskSize)) { cerr << "Failed a test" << endl; return -1; }
-	if(doPass(fd,'b',diskSize)) { cerr << "Failed a test" << endl; return -1; }
-	if(doPass(fd,'c',diskSize)) { cerr << "Failed a test" << endl; return -1; }
+	for(int i = 0; i < NUMPASSES; i++) {
+		if((curSpeed = doPass(fd,'a'+i,diskSize)) < 0) { cerr << "Failed a test" << endl; return -1; }
+		totSpeed += curSpeed;
+	}
 	close(fd);
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds >(std::chrono::steady_clock::now() - startT).count() / 1000.0;
-	cout << "All tests completed in " << duration << " seconds. Average speed=" << (((3.0*MYBUFSIZ*LOCCNT)/duration)/(1024*1024)) << "MB/s." << endl;
+	cout << "All tests completed in " << duration << " seconds. Average speed=" << (totSpeed / NUMPASSES) << "MB/s." << endl;
 	return 0;
 }
