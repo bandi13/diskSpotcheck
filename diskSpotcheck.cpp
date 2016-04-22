@@ -78,12 +78,13 @@ int doPass(int fd, char c, uint64_t maxLoc) {
 int main(int argc, char *argv[]) {
 	int fd;
 	uint64_t diskSize = 0;
-	fd = open("/dev/nbd0",O_RDWR|O_LARGEFILE);
+	if(argc >= 2) fd = open(argv[1],O_RDWR|O_LARGEFILE);
+	else fd = open("/dev/nbd0",O_RDWR|O_LARGEFILE);
 	if(fd == -1) {
 		cerr << "Error opening file" << endl;
 		return 0;
 	}
-	if(argc == 2) { diskSize = atol(argv[1]); cout << "Setting DiskSize=" << diskSize << endl; }
+	if(argc == 3) { diskSize = atol(argv[2]); cout << "Setting DiskSize=" << diskSize << endl; }
 	if(diskSize == 0) {
 		struct stat fd_stat;
 		if(fstat(fd,&fd_stat)) { cerr << "Error getting the stats on the file: " << strerror(errno) << endl; return -1; }
