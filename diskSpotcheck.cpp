@@ -1,6 +1,20 @@
 /* Test program created by: Fekete, Andras
+	 Copyright 2016
 	 This program writes a set of random byte sequences in random locations on
 	 the nbd disk and then reads them back to make sure they're correctly written.
+
+	 This program is free software: you can redistribute it and/or modify
+	 it under the terms of the GNU General Public License as published by
+	 the Free Software Foundation, either version 3 of the License, or
+	 (at your option) any later version.
+
+	 This program is distributed in the hope that it will be useful,
+	 but WITHOUT ANY WARRANTY; without even the implied warranty of
+	 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	 GNU General Public License for more details.
+
+	 You should have received a copy of the GNU General Public License
+	 along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #define _LARGEFILE64_SOURCE
 #include <stdio.h>
@@ -77,16 +91,17 @@ double doPass(int fd, char c, uint64_t maxLoc) {
 	return speed;
 }
 
+#define doUsage(errStream) { cerr << errStream << endl << "Usage: " << argv[0] << " [<device> [<diskSize>]]" << endl; return -1; }
 int main(int argc, char *argv[]) {
 	int fd;
 	uint64_t diskSize = 0;
 	if(argc >= 2) fd = open(argv[1],O_RDWR|O_LARGEFILE);
 	else fd = open("/dev/nbd0",O_RDWR|O_LARGEFILE);
-	if(fd == -1) { cerr << "Error opening file" << endl; return 0; }
+	if(fd == -1) doUsage("Error opening file");
 	if(argc == 3) { diskSize = atol(argv[2]); cout << "Setting DiskSize=" << diskSize << endl; }
 	if(diskSize == 0) {
 		struct stat fd_stat;
-		if(fstat(fd,&fd_stat)) { cerr << "Error getting the stats on the file: " << strerror(errno) << endl; return -1; }
+		if(fstat(fd,&fd_stat)) doUsage("Error getting the stats on the file: " << strerror(errno));
 		if(S_ISBLK(fd_stat.st_mode)) ioctl(fd,BLKGETSIZE64, &diskSize);
 		else {
 			cout << "File stats: blksize=" << fd_stat.st_blksize << " blkcnt=" << fd_stat.st_blocks << endl;
@@ -94,7 +109,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	if(diskSize == 0) { cerr << "DiskSize==0, we can't deal with that." << endl; return -1; }
+	if(diskSize < MYBUFSIZ) doUsage( "DiskSize<"<<(uint64_t)MYBUFSIZ<<", we can't deal with that.");
 	cout << "Running test with diskSize=" << diskSize << endl;
 	double curSpeed, totSpeed = 0;
 	auto startT = std::chrono::steady_clock::now();
