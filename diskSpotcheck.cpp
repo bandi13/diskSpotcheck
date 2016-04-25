@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <string.h>
 #include <chrono>
+#include <memory>
 
 using namespace std;
 
@@ -46,20 +47,21 @@ static void dropSystemCache() {
 #define LOCCNT 1000
 #define NUMPASSES 3
 double doPass(int fd, char c, uint64_t maxLoc) {
-	char buf[MYBUFSIZ];
+	std::unique_ptr<char[]> raiiBuf = std::make_unique<char[]>(MYBUFSIZ);
+	char *buf = raiiBuf.get();
 	uint64_t locs[LOCCNT];
 
 	dropSystemCache();
 	srand(c);
 	for(int i = 0; i < MYBUFSIZ; i++) buf[i] = rand();
 	cout << "Starting test of char=" << c<< " with filesize=" << maxLoc << endl;
-	auto startT = std::chrono::steady_clock::now();
 	maxLoc -= MYBUFSIZ; // make sure we don't accidentally try to write off the end of the file
 	locs[0] = 0; // make sure we get the beginning
 	locs[LOCCNT - 1] = maxLoc; // make sure we get the end
 	for(int i = 1; i < LOCCNT - 1; i++) {
 		locs[i] = (((float)rand() / RAND_MAX) * (maxLoc - locs[i-1] - MYBUFSIZ)) / ((LOCCNT - 2)/4) + locs[i-1] + MYBUFSIZ; // set up the location to be written relative to the last one
 	}
+	auto startT = std::chrono::steady_clock::now();
 	for(int i = 0; i < LOCCNT; i++) {
 		//		cout << i << ": Writing to " << locs[i] << endl;
 		lseek64(fd,locs[i],SEEK_SET);
