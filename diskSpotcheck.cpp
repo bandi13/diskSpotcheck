@@ -54,7 +54,7 @@ double doPass(int fd, char c, uint64_t maxLoc) {
 	dropSystemCache();
 	srand(c);
 	for(int i = 0; i < MYBUFSIZ; i++) buf[i] = rand();
-	cout << "Starting test of char=" << c<< " with filesize=" << maxLoc << endl;
+	cout << "Starting test of char=" << c << endl;
 	maxLoc -= MYBUFSIZ; // make sure we don't accidentally try to write off the end of the file
 	locs[0] = 0; // make sure we get the beginning
 	locs[LOCCNT - 1] = maxLoc; // make sure we get the end
