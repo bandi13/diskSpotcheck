@@ -92,7 +92,7 @@ double doPass(int fd, char c, uint64_t maxLoc, size_t bufSize) {
 	return speed;
 }
 
-#define doUsage(errStream) { cerr << errStream << endl << "Usage: " << argv[0] << " [-d <device>] [-s <diskSizeInMB>] [-b <bufSizeInKB>] [-h]" << endl; return -1; }
+#define doUsage(errStream) { cerr << errStream << endl << "Usage: " << argv[0] << " [-d <device=/dev/nbd0>] [-s <diskSizeInMB=auto>] [-b <bufSizeInKB=64>] [-h]" << endl; return -1; }
 int main(int argc, char *argv[]) {
 	int fd;
 	int opt;
