@@ -88,7 +88,7 @@ double doPass(int fd, char c, uint64_t maxLoc, size_t bufSize) {
 	}
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds >(std::chrono::steady_clock::now() - startT).count() / 1000.0;
 	double speed = ((double)(bufSize*LOCCNT)/duration)/(1024*1024);
-	cout << "Test completed in " << duration << " seconds. Speed=" << speed << "MB/s." << endl;
+	cout << "Test completed in " << duration << " seconds. Speed= " << speed << " MB/s." << endl;
 	return speed;
 }
 
@@ -122,6 +122,8 @@ int main(int argc, char *argv[]) {
 	cout << "Setting diskSize=" << diskSize << ", bufSize=" << bufSize << endl;
 
 	if(diskSize < bufSize) doUsage( "DiskSize<"<<(uint64_t)bufSize<<", we can't deal with that.");
+
+	cout << "Will be writing+reading " << bufSize * LOCCNT / (1024*1024) << "MB" << endl;
 
 	double curSpeed, totSpeed = 0;
 	auto startT = std::chrono::steady_clock::now();
