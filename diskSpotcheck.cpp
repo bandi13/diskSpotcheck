@@ -31,6 +31,7 @@
 #include <string.h>
 #include <chrono>
 #include <memory>
+#include <vector>
 
 using namespace std;
 
@@ -46,7 +47,7 @@ static void dropSystemCache() {
 double doPass(std::string &diskPath, char c, uint64_t maxLoc, size_t bufSize, bool readOnly, uint32_t locCnt) {
 	std::unique_ptr<char[]> raiiBuf = std::make_unique<char[]>(bufSize);
 	char *buf = raiiBuf.get();
-	uint64_t locs[locCnt];
+	std::vector<uint64_t> locs(locCnt);
 
 	dropSystemCache();
 	srand(c);
@@ -127,19 +128,19 @@ int main(int argc, char *argv[]) {
 			if(fstat(fd,&fd_stat)) doUsage("Error getting the stats on the file: " << strerror(errno));
 			if(S_ISBLK(fd_stat.st_mode)) ioctl(fd,BLKGETSIZE64, &diskSize);
 			else {
-				cout << "File stats: blksize=" << fd_stat.st_blksize << " blkcnt=" << fd_stat.st_blocks << endl;
-				diskSize = fd_stat.st_blksize * fd_stat.st_blocks;
+				cout << "File stats: blksize=" << fd_stat.st_blksize << " size=" << fd_stat.st_size << endl;
+				diskSize = fd_stat.st_size;
 			}
 		}
 		close(fd);
 	}
 
-	cout << "Setting diskSize=" << diskSize << ", bufSize=" << bufSize << endl;
+	cout << "Setting diskSize=" << diskSize / (1024*1024.0) << "MB, bufSize=" << bufSize << endl;
 
 	if(diskSize < bufSize) doUsage( "DiskSize<"<<(uint64_t)bufSize<<", we can't deal with that.");
 
-	if(readOnly) cout << "Will be reading " << bufSize * locCnt / (1024*1024) << "MB" << endl;
-	else cout << "Will be writing+reading " << bufSize * locCnt / (1024*1024) << "MB" << endl;
+	if(readOnly) cout << "Will be reading " << bufSize * locCnt / (1024*1024.0) << "MB" << endl;
+	else cout << "Will be writing+reading " << bufSize * locCnt / (1024*1024.0) << "MB" << endl;
 
 	double curSpeed, totSpeed = 0;
 	auto startT = std::chrono::steady_clock::now();
