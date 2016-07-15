@@ -1,0 +1,55 @@
+#!/bin/bash
+if [[ $EUID -ne 0 ]]; then
+	echo This script must have root priviledges
+	exit 1
+fi
+
+
+diskName="/dev/sdg"
+mountLocation="/media/raidx"
+testBin="diskSpotcheck/"
+
+fs=("ext4" "ext3" "ext4")
+
+#becareful, this would overwrite existing file
+toWrite=("fileSystem" "fileName" "write/read" "time(s)")
+printf "%s," "${toWrite[@]}" > testResult.csv
+
+
+for system in "${fs[@]}"; do
+    echo "-------- creating file system ${system} --------"
+    mkfs.${system} -F -F ${diskName} || exit
+    mount ${diskName} ${mountLocation} || exit
+
+    echo "-------- write and read --------"
+    ${testBin}filesystemTest a ${mountLocation} > temp
+    while read -r line
+    do
+	printf "\n%s," "${system}" >> testResult.csv
+	stringarray=(${line})
+	toOut=("${stringarray[1]}" "${stringarray[0]}" "${stringarray[3]}")
+	printf "%s," "${toOut[@]}" >> testResult.csv
+    done < "temp"
+    rm temp
+    echo "-------- umount disk --------"
+    umount ${diskName} || exit
+
+    echo "-------- wait 5 minutes --------"
+    sleep 1s
+
+    echo "-------- mount disk --------"
+    mount ${diskName} ${mountLocation} || exit
+
+    echo "-------- read --------"
+    ${testBin}filesystemTest r ${mountLocation} > temp
+    while read -r line
+    do
+	printf "\n%s," "${system}" >> testResult.csv
+	stringarray=(${line})
+	toOut=("${stringarray[1]}" "${stringarray[0]}" "${stringarray[3]}")
+	printf "%s," "${toOut[@]}" >> testResult.csv
+    done < "temp"
+    rm temp
+    echo "-------- umount disk --------"
+    umount ${diskName} || exit
+done
