@@ -32,7 +32,7 @@ for system in "${fs[@]}"; do
     mount ${diskName} ${mountLocation} || exit
 
     echo "-------- write and read --------"
-    ${testBin}filesystemTest a ${mountLocation} > temp
+    ${testBin}filesystemTest a ${mountLocation} > temp && exit
     while read -r line
     do
 	printf "\n%s," "${system}" >> ${fileName}
@@ -42,20 +42,20 @@ for system in "${fs[@]}"; do
     done < "temp"
     rm temp
     echo "-------- umount disk --------"
-    umount ${diskName} || exit
+    umount ${mountLocation} && exit
 
     #read multiple time to test the maintenance script
     for i in `seq 1 3`;
     do
 	echo 3 > /proc/sys/vm/drop_caches
 	echo "-------- wait 30 minutes --------"
-	sleep 1s
+	sleep 1h
 
 	echo "-------- mount disk --------"
 	mount ${diskName} ${mountLocation} || exit
 
 	echo "-------- read --------"
-	${testBin}filesystemTest r ${mountLocation} > temp
+	${testBin}filesystemTest r ${mountLocation} > temp && exit
 	while read -r line
 	do
 	    printf "\n%s," "${system}" >> ${fileName}
@@ -65,7 +65,7 @@ for system in "${fs[@]}"; do
 	done < "temp"
 	rm temp
 	echo "-------- umount disk --------"
-	umount ${diskName} || exit
+	umount ${mountLocation} && exit
     done
 
     #plot result

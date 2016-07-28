@@ -33,7 +33,7 @@ void write_test( const char* path ) {
 		fname << path << "test" << (uint16_t)j;
 		t = clock();
 		myFile.open( fname.str() );
-		for(int i = 0; i < j*1024*1024; i ++ ) myFile << rand();
+		for(int i = 0; i < j*1024; i ++ ) myFile << rand();
 		myFile.close();
 		t = clock() - t;
 
@@ -72,7 +72,7 @@ void read_test(const char* path) {
 }
 
 int main( int argc, char* argv[] ) {
-	if(argc != 2) { usage(argv[0]); return 1; }
+	if(argc != 3) { usage(argv[0]); return 1; }
 
 	if(string(argv[1]) == "r") read_test(argv[argc-1]);
 	else if(string(argv[1]) == "w") write_test(argv[argc-1]);
