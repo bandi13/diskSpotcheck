@@ -40,5 +40,7 @@ plt.xlabel('index of w/r')
 plt.xticks(ind + width/2., xtick)
 plt.autoscale(enable=True, axis='both', tight=None)
 #plt.savefig("/resultPlot/"+sys.argv[1][:-4]+"_"+fs+"_"+file+".pdf")
-plt.savefig(results_dir+sys.argv[1][17:-4]+"_"+fs+"_"+file+".pdf")
+outImage = results_dir+os.path.splitext(os.path.basename(sys.argv[1]))[0]+"_"+fs+"_"+file+".svg"
+#print outImage
+plt.savefig(outImage)
 #plt.show()

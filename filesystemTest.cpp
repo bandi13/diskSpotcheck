@@ -13,7 +13,7 @@ using namespace std;
 
 //usage syntax
 void usage(char *progName) {
-	cout << "Usage: " << progName << " [r|w|a]" << endl;
+	cout << "Usage: " << progName << " <r|w|a> <testFilePath>" << endl;
 	cout << "'r' for read test" << endl;
 	cout << "'w' for write test" << endl;
 	cout << "'a' for both" << endl;
@@ -30,10 +30,10 @@ void write_test( const char* path ) {
 	srand('a');
 	for( int j = 1; j <= 9; j++ ) {
 		std::ostringstream fname;
-		fname << path << "test" << (uint16_t)j;
+		fname << path << "/test" << (uint16_t)j;
 		t = clock();
 		myFile.open( fname.str() );
-		for(int i = 0; i < j*1024; i ++ ) myFile << rand();
+		for(int i = 0; i < j*1024*1024; i ++ ) myFile << rand();
 		myFile.close();
 		t = clock() - t;
 
@@ -56,7 +56,7 @@ void read_test(const char* path) {
 
 	for( int j = 0; j < 5; j++ ) {
 		std::ostringstream fname;
-		fname << path << "test" << (uint16_t)(id+2*j);
+		fname << path << "/test" << (uint16_t)(id+2*j);
 
 		t = clock();
 		myFile.open( fname.str() );
