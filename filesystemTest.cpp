@@ -32,7 +32,7 @@ void write_test( const char* path ) {
 		fname << path << "/test" << j;
 		int maxSize = (rand()%1024)*1024;
 		srand(j);
-		myFile.open( fname.str() );
+		myFile.open( fname.str(), std::ofstream::out | std::ofstream::trunc );
 		while(maxSize--) myFile << rand();
 		myFile.close();
 	}
