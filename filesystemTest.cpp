@@ -9,6 +9,7 @@
 #include<cstdint>
 #include<string>
 #include<ctime>
+#include <algorithm>
 using namespace std;
 
 //usage syntax
@@ -25,20 +26,20 @@ void usage(char *progName) {
 void write_test( const char* path ) {
 	ofstream myFile;
 	clock_t t;
-	float time;
+//	float time;
 
 	srand('a');
-	for( int j = 1; j <= 9; j++ ) {
+	for( int j = 1; j <= 100; j++ ) {
 		std::ostringstream fname;
-		fname << path << "test" << (uint16_t)j;
+		fname << path << "/test" << (uint16_t)j;
 		t = clock();
 		myFile.open( fname.str() );
-		for(int i = 0; i < j*1024; i ++ ) myFile << rand();
+		for(int i = 0; i < j*50*1024; i ++ ) myFile << rand();
 		myFile.close();
 		t = clock() - t;
 
-		time = (float)t/CLOCKS_PER_SEC;
-		cout << "write " << fname.str() <<" in " << time << " seconds" << endl;
+//		time = (float)t/CLOCKS_PER_SEC;
+		//cout << "write " << fname.str() <<" in " << time << " seconds" << endl;
 	}
 
 }
@@ -51,12 +52,12 @@ void read_test(const char* path) {
 	clock_t t;
 	int i;
 	string fname = "";
-	float time;
-	int id = 1;
+//	float time;
+	//int id = 1;
 
-	for( int j = 0; j < 5; j++ ) {
+	for( int j = 0; j < 25; j++ ) {
 		std::ostringstream fname;
-		fname << path << "test" << (uint16_t)(id+2*j);
+		fname << path << "/test" << max(1,rand()%101);
 
 		t = clock();
 		myFile.open( fname.str() );
@@ -66,8 +67,8 @@ void read_test(const char* path) {
 		myFile.close();
 		t = clock() - t;
 
-		time = (float)t/CLOCKS_PER_SEC;
-		cout << "read  " << fname.str() <<" in " << time << " seconds" << endl;
+//		time = (float)t/CLOCKS_PER_SEC;
+		//cout << "read  " << fname.str() <<" in " << time << " seconds" << endl;
 	}
 }
 
