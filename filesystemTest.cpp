@@ -9,7 +9,6 @@
 #include<cstdint>
 #include<string>
 #include<ctime>
-#include <algorithm>
 using namespace std;
 
 //usage syntax
@@ -20,28 +19,23 @@ void usage(char *progName) {
 	cout << "'a' for both" << endl;
 }
 
+#define NUM_FILES 100
+
 //write test
-//currently I write 1024*1024 random char
+//currently I write n*1024 random char, where 'n' is a random number in range [0,1024]
 //future version would be take an argument for size, and take another argument for number of file to generate
 void write_test( const char* path ) {
 	ofstream myFile;
-	clock_t t;
-//	float time;
 
-	srand('a');
-	for( int j = 1; j <= 100; j++ ) {
+	for(uint16_t j = 0; j < NUM_FILES; j++ ) {
 		std::ostringstream fname;
-		fname << path << "/test" << (uint16_t)j;
-		t = clock();
+		fname << path << "/test" << j;
+		int maxSize = (rand()%1024)*1024;
+		srand(j);
 		myFile.open( fname.str() );
-		for(int i = 0; i < j*1024*1024; i ++ ) myFile << rand();
+		while(maxSize--) myFile << rand();
 		myFile.close();
-		t = clock() - t;
-
-//		time = (float)t/CLOCKS_PER_SEC;
-		//cout << "write " << fname.str() <<" in " << time << " seconds" << endl;
 	}
-
 }
 
 //read test
@@ -49,26 +43,17 @@ void write_test( const char* path ) {
 //future version would take an argument to read specific file
 void read_test(const char* path) {
 	ifstream myFile;
-	clock_t t;
 	int i;
-	string fname = "";
-//	float time;
-	//int id = 1;
 
-	for( int j = 0; j < 25; j++ ) {
+	for( int j = 0; j < NUM_FILES/4; j++ ) {
 		std::ostringstream fname;
-		fname << path << "/test" << max(1,rand()%101);
+		uint16_t fileNum = rand() % NUM_FILES;
+		fname << path << "/test" << fileNum;
 
-		t = clock();
+		srand(fileNum);
 		myFile.open( fname.str() );
-		while (myFile >> i ) {
-			if(i != rand()) { cerr << "Invalid file written: " << fname.str() << endl; return; }
-		}
+		while (myFile >> i ) if(i != rand()) { cerr << "Invalid file written: " << fname.str() << endl; return; }
 		myFile.close();
-		t = clock() - t;
-
-//		time = (float)t/CLOCKS_PER_SEC;
-		//cout << "read  " << fname.str() <<" in " << time << " seconds" << endl;
 	}
 }
 
