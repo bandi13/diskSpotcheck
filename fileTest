@@ -4,10 +4,9 @@ if [[ $EUID -ne 0 ]]; then
 	exit 1
 fi
 
-
 diskName="/dev/nbd0"
 mountLocation="/media/raidx"
-testBin="diskSpotcheck/"
+testBin="./filesystemTest"
 now=`date +%Y%m%d_%H%M%S_`
 dataDir="fileSystemResult"
 mkdir -p ${dataDir}
@@ -19,58 +18,26 @@ toWrite=("fileSystem" "fileName" "write/read" "time(s)")
 printf "%s," "${toWrite[@]}" > ${fileName}
 
 for system in "${fs[@]}"; do
-    echo "-------- creating file system ${system} --------"
-    if [[ "${system}" == "ntfs" ]]; then
-	mkfs.ntfs -f ${diskName} || exit
-    elif [[ "${system}" == "ext4" ]]; then
-	mkfs.ext4 -F -F ${diskName} || exit
-    elif [[ "${system}" == "ext3" ]]; then
-	mkfs.ext3 -F -F ${diskName} || exit
-    else
-	mkfs.${system} ${diskName} || exit
-    fi
-    mount ${diskName} ${mountLocation} || exit
+	echo "-------- creating file system ${system} --------"
+	if [[ "${system}" == "ntfs" ]]; then
+		mkfs.ntfs -f ${diskName} || exit
+	elif [[ "${system}" == "ext4" ]]; then
+		mkfs.ext4 -F -F ${diskName} || exit
+	elif [[ "${system}" == "ext3" ]]; then
+		mkfs.ext3 -F -F ${diskName} || exit
+	else
+		mkfs.${system} ${diskName} || exit
+	fi
 
-    echo "-------- write and read --------"
-    ${testBin}filesystemTest a ${mountLocation} > temp && exit
-    while read -r line
-    do
-	printf "\n%s," "${system}" >> ${fileName}
-	stringarray=(${line})
-	toOut=("${stringarray[1]}" "${stringarray[0]}" "${stringarray[3]}")
-	printf "%s," "${toOut[@]}" >> ${fileName}
-    done < "temp"
-    rm temp
-    echo "-------- umount disk --------"
-    umount ${mountLocation} && exit
-
-    #read multiple time to test the maintenance script
-    for i in `seq 1 3`;
-    do
-	echo 3 > /proc/sys/vm/drop_caches
-	echo "-------- wait 30 minutes --------"
-	sleep 1h
-
-	echo "-------- mount disk --------"
-	mount ${diskName} ${mountLocation} || exit
-
-	echo "-------- read --------"
-	${testBin}filesystemTest r ${mountLocation} > temp && exit
-	while read -r line
-	do
-	    printf "\n%s," "${system}" >> ${fileName}
-	    stringarray=(${line})
-	    toOut=("${stringarray[1]}" "${stringarray[0]}" "${stringarray[3]}")
-	    printf "%s," "${toOut[@]}" >> ${fileName}
-	done < "temp"
-	rm temp
-	echo "-------- umount disk --------"
-	umount ${mountLocation} && exit
-    done
-
-    #plot result
-    for i in `seq 1 2 9`;
-    do
-	python resultPlot.py ${fileName} ${system} "test${i}"
-    done
+	echo --- testing ---
+	/usr/bin/time -f "%e" sh -c "mount /dev/nbd0 /media/raidx && ./filesystemTest a /media/raidx 2>&1; umount /media/raidx" &>> ${fileName}
+#read multiple time to test the maintenance script
+	for i in `seq 1 30`; do
+		echo --- flushing caches ---
+		echo 3 > /proc/sys/vm/drop_caches
+		echo --- waiting ---
+		sleep 15m
+		echo --- testing ---
+		/usr/bin/time -f "%e" sh -c "mount /dev/nbd0 /media/raidx && ./filesystemTest r /media/raidx 2>&1; umount /media/raidx" &>> ${fileName}
+	done
 done
