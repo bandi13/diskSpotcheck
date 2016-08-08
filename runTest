@@ -30,7 +30,7 @@ for system in "${fs[@]}"; do
 	fi
 
 	echo --- testing ---
-	/usr/bin/time -f "%e" sh -c "mount /dev/nbd0 /media/raidx && ./filesystemTest a /media/raidx 2>&1; umount /media/raidx" &>> ${fileName}
+	/usr/bin/time -f "%e" sh -c "mount /dev/nbd0 /media/raidx && ./filesystemTest a /media/raidx 2>&1 > ${fileName}.log; umount /media/raidx" &>> ${fileName}
 #read multiple time to test the maintenance script
 	for i in `seq 1 30`; do
 		echo --- flushing caches ---
@@ -38,6 +38,6 @@ for system in "${fs[@]}"; do
 		echo --- waiting ---
 		sleep 15m
 		echo --- testing ---
-		/usr/bin/time -f "%e" sh -c "mount /dev/nbd0 /media/raidx && ./filesystemTest r /media/raidx 2>&1; umount /media/raidx" &>> ${fileName}
+		/usr/bin/time -f "%e" sh -c "mount /dev/nbd0 /media/raidx && ./filesystemTest r /media/raidx 2>&1 > ${fileName}.log; umount /media/raidx" &>> ${fileName}
 	done
 done
