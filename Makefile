@@ -1,11 +1,7 @@
-all: diskSpotcheck filesystemTest
+all: diskSpotcheck filesystemTest fst
 
-diskSpotcheck: diskSpotcheck.cpp
-	g++ diskSpotcheck.cpp -o diskSpotcheck -std=c++14 -O4 -Wall
-
-filesystemTest: filesystemTest.cpp
-	g++ filesystemTest.cpp -o filesystemTest -std=c++14 -O4 -Wall
-
+%: %.cpp
+	g++ $< -o $@ -std=c++14 -O4 -Wall
 
 clean:
-	rm -f diskSpotcheck filesystemTest
+	rm -f diskSpotcheck filesystemTest fst
