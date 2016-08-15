@@ -1,0 +1,43 @@
+#!/bin/bash
+if [[ $EUID -ne 0 ]]; then
+	echo This script must have root priviledges
+	exit 1
+fi
+
+diskName="/dev/nbd0"
+mountLocation="/media/raidx"
+testBin="./filesystemTest"
+now=`date +%Y%m%d_%H%M%S_`
+dataDir="fileSystemResult"
+mkdir -p ${dataDir}
+fileName="${dataDir}/${now}FileSystemResult.csv"
+#fs=("ext4" "ext3" "ntfs")
+fs=("ext4")
+
+toWrite=("fileSystem" "fileName" "write/read" "time(s)")
+printf "%s," "${toWrite[@]}" > ${fileName}
+
+for system in "${fs[@]}"; do
+	echo "-------- creating file system ${system} --------"
+	if [[ "${system}" == "ntfs" ]]; then
+		mkfs.ntfs -f ${diskName} || exit
+	elif [[ "${system}" == "ext4" ]]; then
+		mkfs.ext4 -F -F ${diskName} || exit
+	elif [[ "${system}" == "ext3" ]]; then
+		mkfs.ext3 -F -F ${diskName} || exit
+	else
+		mkfs.${system} ${diskName} || exit
+	fi
+
+	echo --- testing ---
+	/usr/bin/time -f "%e" sh -c "mount /dev/nbd0 /media/raidx && ./filesystemTest a /media/raidx 2>&1 > ${fileName}.log; umount /media/raidx" &>> ${fileName}
+#read multiple time to test the maintenance script
+	for i in `seq 1 30`; do
+		echo --- flushing caches ---
+		echo 3 > /proc/sys/vm/drop_caches
+		echo --- waiting ---
+		sleep 15m
+		echo --- testing ---
+		/usr/bin/time -f "%e" sh -c "mount /dev/nbd0 /media/raidx && ./filesystemTest r /media/raidx 2>&1 > ${fileName}.log; umount /media/raidx" &>> ${fileName}
+	done
+done
