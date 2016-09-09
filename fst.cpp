@@ -18,7 +18,7 @@
 using namespace std;
 
 #define NUMBUFFERS 10
-#define NUM_FILES 100
+#define NUM_FILES 20
 
 
 //usage syntax
