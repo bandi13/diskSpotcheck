@@ -36,9 +36,9 @@ bool write_test( const char* path, vector<unique_ptr<char>>& base ) {
         //compose file name
         std::ostringstream fname;
         fname << path << "/test" << i;
+        cout << "now write " << fname.str().c_str() << endl;
         //record start time
         auto startT = std::chrono::steady_clock::now();
-        cout << "now write " << fname.str().c_str() << endl;
         int fd = open(fname.str().c_str(), O_RDWR | O_CREAT | O_LARGEFILE | O_DIRECT | O_SYNC | O_TRUNC, S_IRUSR | S_IWUSR);
         if(fd<0){ cerr << "error when open file: " << strerror(errno) << endl; return true;}
         //write file, the size of file would be (i+1)*4 MB, for example, test99 would be 400MB
@@ -57,19 +57,20 @@ bool write_test( const char* path, vector<unique_ptr<char>>& base ) {
     return false;
 }
 
-
+struct voidPtrDeleter { void operator()(void *p) { free(p); } };
 //read test
 bool read_test(const char* path, vector<unique_ptr<char>>& base) {
     for( int i = 0; i < NUM_FILES/4; i++ ) {
         std::ostringstream fname;
         uint16_t fileNum = rand() % NUM_FILES;
         fname << path << "/test" << fileNum;
-        auto startT = std::chrono::steady_clock::now();
-        cout << "now validate " << fname.str().c_str() << endl;
-        int fd = open(fname.str().c_str(), O_RDWR | O_LARGEFILE | O_DIRECT);
-        if(fd<0){ cerr << "error when open file: " << strerror(errno) << endl; return true;}
         void *testStr;
         if(posix_memalign(&testStr, 4096, 4096)) { cerr << "Failed aligning memory" << strerror(errno) << endl; return true; }
+				unique_ptr<void,voidPtrDeleter> testPtr(testStr); // make smart ptr remember to free the memory
+        cout << "now validate " << fname.str().c_str() << endl;
+        auto startT = std::chrono::steady_clock::now();
+        int fd = open(fname.str().c_str(), O_RDWR | O_LARGEFILE | O_DIRECT);
+        if(fd<0){ cerr << "error when open file: " << strerror(errno) << endl; return true;}
         for(int j = 0; j <= fileNum; j++) {
             srand(j);
             for(int k = 0; k < 1024; k++) {
@@ -88,12 +89,12 @@ bool read_test(const char* path, vector<unique_ptr<char>>& base) {
 int main( int argc, char* argv[] ) {
     if(argc != 3) { usage(argv[0]); return 1; }
     bool doRead = false, doWrite = false;
-    
+ 
     if(string(argv[1]) == "r") doRead = true;
     else if(string(argv[1]) == "w") doWrite = true;
     else if(string(argv[1]) == "a") { doRead = true; doWrite = true; }
     else { usage(argv[0]); return 1; }
-    
+ 
     //prepair the base string trunk
     vector<unique_ptr<char>>base;
     for(int i = 0; i < NUMBUFFERS; i++) {
@@ -103,15 +104,10 @@ int main( int argc, char* argv[] ) {
         for(int j = 0; j < 4096; j++) ((char *)testStr)[j] = 'a' + rand()%26;
         base.emplace_back(unique_ptr<char>(testStr));
     }
-    
-    if(doWrite) {
-        if(write_test(argv[argc-1], base)) { cerr << "Failed write test" << endl; return 1; }
-    }
-    
-    if(doRead) {
-        if(read_test(argv[argc-1], base)) { cerr << "Failed read test" << endl; return 1; }
-    }
-    
+ 
+    if(doWrite) { if(write_test(argv[argc-1], base)) { cerr << "Failed write test" << endl; return 1; } }
+    if(doRead)  { if(read_test(argv[argc-1], base)) { cerr << "Failed read test" << endl; return 1; } }
+ 
     cout << "Test completed successfully" << endl;
     return 0;
 }
