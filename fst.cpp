@@ -18,8 +18,8 @@
 using namespace std;
 
 #define NUMBUFFERS 10
-#define NUM_FILES 20
-
+#define NUM_FILES 4
+#define CHUNK 2
 
 //usage syntax
 void usage(char *progName) {
@@ -42,11 +42,11 @@ bool write_test( const char* path, vector<unique_ptr<char>>& base ) {
         int fd = open(fname.str().c_str(), O_RDWR | O_CREAT | O_LARGEFILE | O_DIRECT | O_SYNC | O_TRUNC, S_IRUSR | S_IWUSR);
         if(fd<0){ cerr << "error when open file: " << strerror(errno) << endl; return true;}
         //write file, the size of file would be (i+1)*4 MB, for example, test99 would be 400MB
+        srand(i);
         for(int j = 0; j <= i; j++) {//***change i to get larger file***
-            srand(j);
             for(int k = 0; k < 1024; k++) {
-                int wt = write(fd,base[rand()%NUMBUFFERS].get(), 4096);
-                if(wt != 4096) { cerr << "error when write file " << wt << " " << strerror(errno) << endl; return true; }
+                int wt = write(fd,base[rand()%NUMBUFFERS].get(), CHUNK*4096);
+                if(wt != CHUNK*4096) { cerr << "error when write file " << wt << " " << strerror(errno) << endl; return true; }
             }
         }
         //print finish confirmation and speed of writing
@@ -65,18 +65,18 @@ bool read_test(const char* path, vector<unique_ptr<char>>& base) {
         uint16_t fileNum = rand() % NUM_FILES;
         fname << path << "/test" << fileNum;
         void *testStr;
-        if(posix_memalign(&testStr, 4096, 4096)) { cerr << "Failed aligning memory" << strerror(errno) << endl; return true; }
+        if(posix_memalign(&testStr, 4096, CHUNK*4096)) { cerr << "Failed aligning memory" << strerror(errno) << endl; return true; }
 				unique_ptr<void,voidPtrDeleter> testPtr(testStr); // make smart ptr remember to free the memory
         cout << "now validate " << fname.str().c_str() << endl;
         auto startT = std::chrono::steady_clock::now();
         int fd = open(fname.str().c_str(), O_RDWR | O_LARGEFILE | O_DIRECT);
         if(fd<0){ cerr << "error when open file: " << strerror(errno) << endl; return true;}
+        srand(fileNum);
         for(int j = 0; j <= fileNum; j++) {
-            srand(j);
             for(int k = 0; k < 1024; k++) {
-                int wt = read(fd,testStr, 4096);
-                if(wt != 4096) { cerr << "error when read file " << wt << " " << strerror(errno) << endl; return true; }
-                if(strncmp((char *)testStr, (char *)base[rand()%NUMBUFFERS].get(),4096)!=0){cerr << "error validate" << endl; return true;}
+                int wt = read(fd,testStr, CHUNK*4096);
+                if(wt != CHUNK*4096) { cerr << "error when read file " << wt << " " << strerror(errno) << endl; return true; }
+                if(strncmp((char *)testStr, (char *)base[rand()%NUMBUFFERS].get(),CHUNK*4096)!=0){cerr << "error validate" << endl; return true;}
             }
         }
         if(close(fd)<0) {cerr << "error when close file after read" << endl; return true;}
@@ -100,8 +100,8 @@ int main( int argc, char* argv[] ) {
     for(int i = 0; i < NUMBUFFERS; i++) {
         srand(i);
         char *testStr;
-        if(posix_memalign((void **)&testStr, 4096, 4096)) { cerr << "Failed aligning memory" << strerror(errno) << endl; return 1; }
-        for(int j = 0; j < 4096; j++) ((char *)testStr)[j] = 'a' + rand()%26;
+        if(posix_memalign((void **)&testStr, 4096, CHUNK*4096)) { cerr << "Failed aligning memory" << strerror(errno) << endl; return 1; }
+        for(int j = 0; j < CHUNK*4096; j++) ((char *)testStr)[j] = 'a' + rand()%26;
         base.emplace_back(unique_ptr<char>(testStr));
     }
  
