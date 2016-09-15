@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <fcntl.h>
 #include <unistd.h>
+#include <stdio.h>
 #include<string.h>
 #include<memory>
 #include<chrono>
@@ -70,15 +71,16 @@ bool read_test(const char* path, vector<unique_ptr<char>>& base) {
         cout << "now validate " << fname.str().c_str() << endl;
         auto startT = std::chrono::steady_clock::now();
         int fd = open(fname.str().c_str(), O_RDWR | O_LARGEFILE | O_DIRECT);
+        
         if(fd<0){ cerr << "error when open file: " << strerror(errno) << endl; return true;}
         srand(fileNum);
-        for(int j = 0; j <= fileNum; j++) {
-            for(int k = 0; k < 1024; k++) {
-                int wt = read(fd,testStr, CHUNK*4096);
-                if(wt != CHUNK*4096) { cerr << "error when read file " << wt << " " << strerror(errno) << endl; return true; }
-                if(strncmp((char *)testStr, (char *)base[rand()%NUMBUFFERS].get(),CHUNK*4096)!=0){cerr << "error validate" << endl; return true;}
-            }
+        while(true)
+        {
+            int wt = read(fd,testStr, CHUNK*4096);
+            if(wt==0) break;
+            if(strncmp((char *)testStr, (char *)base[rand()%NUMBUFFERS].get(),wt)!=0){cerr << "error validate" << endl; return true;}
         }
+
         if(close(fd)<0) {cerr << "error when close file after read" << endl; return true;}
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds >(std::chrono::steady_clock::now() - startT).count() / 1000.0;
         cout << "success read validation " << (fileNum+1)*4 << " MB at " << (fileNum+1)*4/duration << " MB/s" << endl;
