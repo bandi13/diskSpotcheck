@@ -6,9 +6,9 @@ fi
 
 diskName="/dev/nbd0"
 mountLocation="/media/raidx"
-testBin="./filesystemTest"
+testBin="./fst"
 now=`date +%Y%m%d_%H%M%S_`
-dataDir="fileSystemResult"
+dataDir="results"
 mkdir -p ${dataDir}
 fileName="${dataDir}/${now}FileSystemResult.csv"
 #fs=("ext4" "ext3" "ntfs")
@@ -29,15 +29,20 @@ for system in "${fs[@]}"; do
 		mkfs.${system} ${diskName} || exit
 	fi
 
+	echo --- writing ---
+	time=`/usr/bin/time -f "%e" sh -c "mount ${diskName} ${mountLocation} && ${testBin} w ${mountLocation} 2>&1 >> ${fileName}.log; umount ${mountLocation}" 2>&1 | tee -a ${fileName}`
+	echo Lasted ${time}
 	echo --- testing ---
-	/usr/bin/time -f "%e" sh -c "mount /dev/nbd0 /media/raidx && ./filesystemTest a /media/raidx 2>&1 > ${fileName}.log; umount /media/raidx" &>> ${fileName}
+	time=`/usr/bin/time -f "%e" sh -c "mount ${diskName} ${mountLocation} && ${testBin} r ${mountLocation} 2>&1 >> ${fileName}.log; umount ${mountLocation}" 2>&1 | tee -a ${fileName}`
+	echo Lasted ${time}
 #read multiple time to test the maintenance script
-	for i in `seq 1 30`; do
+	for i in `seq 1 4`; do
 		echo --- flushing caches ---
 		echo 3 > /proc/sys/vm/drop_caches
 		echo --- waiting ---
-		sleep 15m
+		sleep "$((${time}*3))s"
 		echo --- testing ---
-		/usr/bin/time -f "%e" sh -c "mount /dev/nbd0 /media/raidx && ./filesystemTest r /media/raidx 2>&1 > ${fileName}.log; umount /media/raidx" &>> ${fileName}
+		time=`/usr/bin/time -f "%e" sh -c "mount ${diskName} ${mountLocation} && ${testBin} r ${mountLocation} 2>&1 >> ${fileName}.log; umount ${mountLocation}" 2>&1 | tee -a ${fileName}`
+		echo Lasted ${time}
 	done
 done
