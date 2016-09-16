@@ -30,17 +30,18 @@ for system in "${fs[@]}"; do
 	fi
 
 	echo --- writing ---
-	time=`/usr/bin/time -f "%e" sh -c "mount ${diskName} ${mountLocation} && ${testBin} w ${mountLocation} 2>&1 >> ${fileName}.log; umount ${mountLocation}" 2>&1 | tee -a ${fileName}`
-	echo Lasted ${time}
+	writeTime=`/usr/bin/time -f "%e" sh -c "mount ${diskName} ${mountLocation} && ${testBin} w ${mountLocation} 2>&1 >> ${fileName}.log; umount ${mountLocation}" 2>&1 | tee -a ${fileName}`
+	echo Lasted ${writeTime}
 	echo --- testing ---
 	time=`/usr/bin/time -f "%e" sh -c "mount ${diskName} ${mountLocation} && ${testBin} r ${mountLocation} 2>&1 >> ${fileName}.log; umount ${mountLocation}" 2>&1 | tee -a ${fileName}`
 	echo Lasted ${time}
+	time=${writeTime} # make first wait a function of the write time
 #read multiple time to test the maintenance script
 	for i in `seq 1 7`; do
 		echo --- flushing caches ---
 		echo 3 > /proc/sys/vm/drop_caches
 		echo --- waiting ---
-		sleep "$(((${time%.*}+1) * 3))s" # Round up
+		sleep "$(((${time%.*}+1) * 5))s" # Round up
 		echo --- testing ---
 		time=`/usr/bin/time -f "%e" sh -c "mount ${diskName} ${mountLocation} && ${testBin} r ${mountLocation} 2>&1 >> ${fileName}.log; umount ${mountLocation}" 2>&1 | tee -a ${fileName}`
 		echo Lasted ${time}
