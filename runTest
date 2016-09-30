@@ -9,10 +9,17 @@ mountLocation="/media/raidx"
 testBin="./fst"
 now=`date +%Y%m%d_%H%M%S_`
 dataDir="results"
-mkdir -p ${dataDir}
 fileName="${dataDir}/${now}FileSystemResult.csv"
 #fs=("ext4" "ext3" "ntfs")
 fs=("ext4")
+
+if [ ! -e $mountLocation ]; then
+	mkdir -p $mountLocation
+fi
+
+if [ ! -e $dataDir ]; then
+	mkdir -p $dataDir
+fi
 
 toWrite=("fileSystem" "fileName" "write/read" "time(s)")
 printf "%s," "${toWrite[@]}" > ${fileName}
