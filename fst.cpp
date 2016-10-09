@@ -20,6 +20,7 @@ using namespace std;
 #define NUMBUFFERS 10
 #define NUM_FILES 20
 #define CHUNK_SIZE (1*4096)
+#define ONE_MB ((1024*1024) / CHUNK_SIZE)
 
 //usage syntax
 void usage(char *progName) {
@@ -44,7 +45,7 @@ bool write_test( const char* path, vector<unique_ptr<char>>& base ) {
 		int fd = open(fname.str().c_str(), O_RDWR | O_CREAT | O_LARGEFILE | O_DIRECT | O_SYNC | O_TRUNC, S_IRUSR | S_IWUSR);
 		if(fd < 0) { cerr << "error opening file: " << strerror(errno) << endl; return true; }
 		srand(i);
-		for(int j = 0; j < i*256; j++) { // each file is i*1MB
+		for(int j = (i+1)*10*ONE_MB; j;  j--) { // each file is (i+1)*10MB
 			if(write(fd,base[rand()%NUMBUFFERS].get(), CHUNK_SIZE) != CHUNK_SIZE) { cerr << "error: " << strerror(errno) << endl; return true; }
 		}
 		//print finish confirmation and speed of writing
