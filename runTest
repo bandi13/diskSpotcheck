@@ -10,7 +10,7 @@ testBin="./fst"
 now=`date +%Y%m%d_%H%M%S_`
 dataDir="results"
 #fs=("ext4" "ext3" "ntfs")
-fs=("ntfs" "ext4")
+fs=("ext4")
 
 if [ ! -e $mountLocation ]; then
 	mkdir -p $mountLocation
