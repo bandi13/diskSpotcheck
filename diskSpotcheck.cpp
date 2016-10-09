@@ -117,9 +117,10 @@ int main(int argc, char *argv[]) {
 			default:  doUsage("Unknown argument"); return -1;
 		}
 	}
-		if(locCnt == 0) doUsage("locCount must be non-zero");
-		if(numPasses == 0) doUsage("numPasses must be non-zero");
-		if(numPasses > 24) doUsage("numPasses must be less than 24...because I said so.");
+	if(optind < argc) { doUsage("Unknown argument: " << argv[optind]); return -1; }
+	if(locCnt == 0) doUsage("locCount must be non-zero");
+	if(numPasses == 0) doUsage("numPasses must be non-zero");
+	if(numPasses > 24) doUsage("numPasses must be less than 24...because I said so.");
 	{
 		int fd;
 		if((fd = open(diskPath.c_str(),O_RDWR|O_LARGEFILE)) == -1) doUsage("Error opening " << diskPath << ": " << strerror(errno));
