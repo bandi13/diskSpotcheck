@@ -55,7 +55,7 @@ for system in "${fs[@]}"; do
 		echo --- flushing caches ---
 		echo 3 > /proc/sys/vm/drop_caches
 		echo --- waiting ---
-		sleep "$(((${time%.*}+1) * 3))s" # Round up
+		sleep "$(((${time%.*}+1) * 5))s" # Round up
 		echo --- testing ---
 		time=`/usr/bin/time -f "%e" sh -c "mount ${diskName} ${mountLocation} && ${testBin} -R 5 ${mountLocation} 2>&1 >> ${fileName}.log; umount ${mountLocation}" 2>&1 | tee -a ${fileName}-1`
 		echo Lasted ${time}
@@ -64,7 +64,7 @@ for system in "${fs[@]}"; do
 		echo --- flushing caches ---
 		echo 3 > /proc/sys/vm/drop_caches
 		echo --- waiting ---
-		sleep "$(((${time%.*}+1) * 3))s" # Round up
+		sleep "$(((${time%.*}+1) * 5))s" # Round up
 		echo --- testing ---
 		time=`/usr/bin/time -f "%e" sh -c "mount ${diskName} ${mountLocation} && ${testBin} -R 10 ${mountLocation} 2>&1 >> ${fileName}.log; umount ${mountLocation}" 2>&1 | tee -a ${fileName}-2`
 		echo Lasted ${time}
@@ -73,7 +73,7 @@ for system in "${fs[@]}"; do
 		echo --- flushing caches ---
 		echo 3 > /proc/sys/vm/drop_caches
 		echo --- waiting ---
-		sleep "$(((${time%.*}+1) * 3))s" # Round up
+		sleep "$(((${time%.*}+1) * 5))s" # Round up
 		echo --- testing ---
 		time=`/usr/bin/time -f "%e" sh -c "mount ${diskName} ${mountLocation} && ${testBin} -R 15 ${mountLocation} 2>&1 >> ${fileName}.log; umount ${mountLocation}" 2>&1 | tee -a ${fileName}-3`
 		echo Lasted ${time}
