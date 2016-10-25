@@ -51,6 +51,7 @@ void usage(char *progName) {
 	cout << "\t-d           => Set DIRECT file access mode" << endl;
 	cout << "\t-s <seconds> => Sleep until 'seconds' seconds" << endl;
 	cout << "Note: Multiple options can be passed multiple times. Such as " << progName << " -w 10 -r 10 -p 10 -r 10" << endl;
+	cout << "Note: Percent can be 0 to 100 inclusive, but I would not go past 80%. The way the locations get generated may take a long time to complete." << endl;
 	cout << "Chunk size = " << CHUNK_SIZE << endl;
 }
 
@@ -142,7 +143,8 @@ uint8_t generateLocs(uint8_t percentUtil, vector<TXLocs_t> &locations, uint64_t 
 	locations.reserve(newSet.size());
 	for(auto iter : newSet) locations.push_back(iter);
 
-	cout << "Desired %: " << (int)percentUtil << " actual %: " << 100*totalSize / fileSize << endl;
+//	for(auto iter : newSet) cout << '(' << iter.offset << ',' << (int)iter.numChunks << ')' << endl;
+//	cout << "Desired %: " << (int)percentUtil << " actual %: " << 100*totalSize / fileSize << endl;
 	return maxChunks;
 }
 
@@ -241,14 +243,18 @@ int main( int argc, char* argv[] ) {
 				break;
 			case 'p': {
 					uint8_t percent = atoi(optarg);
+					cout << "Regenerating locations..." << flush;
 					if(percent > 100) { cerr << "Percent value should be between 0 and 100: " << optarg << endl; break; }
 					maxChunks = generateLocs(percent, locations, fileSize);
+					cout << "done: maxChunks = " << (int)maxChunks << endl;
 				}
 				break;
 			case 'P': {
 					uint8_t percent = atoi(optarg);
+					cout << "Adjusting locations..." << flush;
 					if(percent > 100) { cerr << "Percent value should be between 0 and 100: " << optarg << endl; break; }
 					maxChunks = updateLocs(percent, locations, fileSize);
+					cout << "done: maxChunks = " << (int)maxChunks << endl;
 				}
 				break;
 			case 't': numThreads = atoi(optarg); break;
@@ -275,4 +281,3 @@ int main( int argc, char* argv[] ) {
 	cout << "Test completed successfully" << endl;
 	return 0;
 }
-
