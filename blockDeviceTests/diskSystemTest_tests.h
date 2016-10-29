@@ -44,8 +44,7 @@ public:
 		fSize = file.getSize();
 	}
 	~Test() {}
-	virtual int64_t do_file(File *file, const std::chrono::steady_clock::time_point endTime, bool isRead) = 0;
-	virtual std::string resultAsString(int64_t) = 0;
+	virtual std::string resultAsString(uint64_t) = 0;
 	typedef enum { FILE_DIRECT, FILE_BUFFERED, FILE_UNBUFFERED } File_t;
 	uint64_t do_test(const std::chrono::steady_clock::time_point endTime, bool isRead, uint8_t numThread, File_t type ) {
 		std::vector<std::future<int64_t>> procs;
@@ -122,34 +121,15 @@ public:
 protected:
 	std::string fname;
 	uint64_t fSize;
+	virtual int64_t do_file(File *file, const std::chrono::steady_clock::time_point endTime, bool isRead) = 0;
 };
 
 class Test_Throughput : public Test {
 public:
 	Test_Throughput(const char *fileName) : Test(fileName) { }
 
-	int64_t do_file(File *file, const std::chrono::steady_clock::time_point endTime, bool isRead) override {
-		if (file->getSize() == 0) { cerr << "error opening file" << endl; return -1; }
-		std::ranlux48_base rngGen(rand());
-		uint64_t vectIdx;
-		uint64_t chunksWritten = 0;
-		auto startTime = std::chrono::steady_clock::now();
-		while (std::chrono::steady_clock::now() < endTime) {
-			vectIdx = rngGen() % locations.size();
-			if (isRead) {
-				if (file->read((char *) testPtr.get(), (ssize_t) locations[vectIdx].numChunks * CHUNK_SIZE, locations[vectIdx].offset) != ((ssize_t) locations[vectIdx].numChunks * CHUNK_SIZE))
-					{ cerr << "error: " << strerror(errno) << endl; return -1; }
-			} else {
-				if (file->write((char *) testPtr.get(), (ssize_t) locations[vectIdx].numChunks * CHUNK_SIZE, locations[vectIdx].offset) != ((ssize_t) locations[vectIdx].numChunks * CHUNK_SIZE))
-					{ cerr << "error: " << strerror(errno) << endl; return -1; }
-			}
-			chunksWritten += locations[vectIdx].numChunks;
-		}
-		return (chunksWritten*CHUNK_SIZE) / (std::chrono::duration_cast<std::chrono::milliseconds >(std::chrono::steady_clock::now() - startTime).count() / 1000.0);
-	}
-
-	virtual std::string resultAsString(int64_t res) {
-		if(res) { std::ostringstream os; os << res << "MB/s"; return os.str(); }
+	virtual std::string resultAsString(uint64_t res) override {
+		if(res) { std::ostringstream os; os << res/(1024*1024) << "MB/s"; return os.str(); }
 		return "Failed";
 	}
 
@@ -191,6 +171,26 @@ protected:
 	uint8_t maxChunks = 0;
 	unique_ptr<void, voidPtrDeleter> testPtr; // make smart ptr remember to free the memory
 
+	int64_t do_file(File *file, const std::chrono::steady_clock::time_point endTime, bool isRead) override {
+		if (file->getSize() == 0) { cerr << "error opening file" << endl; return -1; }
+		std::ranlux48_base rngGen(rand());
+		uint64_t vectIdx;
+		uint64_t chunksWritten = 0;
+		auto startTime = std::chrono::steady_clock::now();
+		while (std::chrono::steady_clock::now() < endTime) {
+			vectIdx = rngGen() % locations.size();
+			if (isRead) {
+				if (file->read((char *) testPtr.get(), (ssize_t) locations[vectIdx].numChunks * CHUNK_SIZE, locations[vectIdx].offset) != ((ssize_t) locations[vectIdx].numChunks * CHUNK_SIZE))
+					{ cerr << "error: " << strerror(errno) << endl; return -1; }
+			} else {
+				if (file->write((char *) testPtr.get(), (ssize_t) locations[vectIdx].numChunks * CHUNK_SIZE, locations[vectIdx].offset) != ((ssize_t) locations[vectIdx].numChunks * CHUNK_SIZE))
+					{ cerr << "error: " << strerror(errno) << endl; return -1; }
+			}
+			chunksWritten += locations[vectIdx].numChunks;
+		}
+		return (chunksWritten*CHUNK_SIZE) / (std::chrono::duration_cast<std::chrono::milliseconds >(std::chrono::steady_clock::now() - startTime).count() / 1000.0);
+	}
+
 	virtual uint8_t addLocToSet(std::set<TXLocs_t> &newSet, std::ranlux48_base &rngGen, uint64_t fileSize) {
 		TXLocs_t nextLoc;
 		nextLoc.offset = rngGen() % fileSize;
@@ -203,8 +203,7 @@ protected:
 			// Overlapping times: taken from http://stackoverflow.com/questions/325933/determine-whether-two-date-ranges-overlap
 			if ((itBefore->offset <= nextLoc.offset) && (itBefore->offset + itBefore->numChunks * CHUNK_SIZE > nextLoc.offset))
 				nextLoc.offset = itBefore->offset + itBefore->numChunks * CHUNK_SIZE;
-			if (it->offset <= nextLoc.offset + nextLoc.numChunks * CHUNK_SIZE)
-				nextLoc.numChunks = (it->offset - nextLoc.offset) / CHUNK_SIZE;
+			if (it->offset <= nextLoc.offset + nextLoc.numChunks * CHUNK_SIZE) nextLoc.numChunks = (it->offset - nextLoc.offset) / CHUNK_SIZE;
 		}
 		if (nextLoc.numChunks) newSet.insert(nextLoc);
 		return nextLoc.numChunks;
@@ -224,6 +223,14 @@ protected:
 class Test_ResponseTime : public Test_Throughput {
 public:
 	Test_ResponseTime(const char *fileName, uint8_t numChunks) : Test_Throughput(fileName), numChunks(numChunks) { }
+
+	virtual std::string resultAsString(uint64_t res) override {
+		if(res) { std::ostringstream os; os << (res / 1000.0) << "ms"; return os.str(); }
+		return "Failed";
+	}
+
+protected:
+	uint8_t numChunks;
 
 	int64_t do_file(File *file, const std::chrono::steady_clock::time_point endTime, bool isRead) override {
 		if (file->getSize() == 0) { cerr << "error opening file" << endl; return -1; }
@@ -246,15 +253,6 @@ public:
 		}
 		return chunksWritten / numTX;
 	}
-
-	virtual std::string resultAsString(int64_t res) {
-		if(res) { std::ostringstream os; os << (res / 1000.0) << "ms"; return os.str(); }
-		return "Failed";
-	}
-
-
-protected:
-	uint8_t numChunks;
 
 	uint8_t addLocToSet(std::set<TXLocs_t> &newSet, std::ranlux48_base &rngGen, uint64_t fileSize) override {
 		TXLocs_t nextLoc;

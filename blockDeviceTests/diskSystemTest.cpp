@@ -83,13 +83,13 @@ int main( int argc, char* argv[] ) {
 				break;
 			case 'w': {
 					uint8_t minutes = atoi(optarg);
-					cout << "Write test " << numThreads << " threads for " << (int)minutes << "min..." << flush;
+					cout << "Write test " << (int)numThreads << " threads for " << (int)minutes << "min..." << flush;
 					cout << "done: " << test->do_testAsString(std::chrono::steady_clock::now() + std::chrono::minutes(minutes),false, numThreads,type) << endl;
 				}
 				break;
 			case 'r': {
 					uint8_t minutes = atoi(optarg);
-					cout << "Read test " << numThreads << " threads for " << (int)minutes << "min..." << flush;
+					cout << "Read test " << (int)numThreads << " threads for " << (int)minutes << "min..." << flush;
 					cout << "done: " << test->do_testAsString(std::chrono::steady_clock::now() + std::chrono::minutes(minutes),true, numThreads,type) << endl;
 				}
 				break;
