@@ -45,8 +45,54 @@ public:
 	}
 	~Test() {}
 	virtual int64_t do_file(File *file, const std::chrono::steady_clock::time_point endTime, bool isRead) = 0;
+	virtual std::string resultAsString(int64_t) = 0;
 	typedef enum { FILE_DIRECT, FILE_BUFFERED, FILE_UNBUFFERED } File_t;
-	virtual std::string do_testString(const std::chrono::steady_clock::time_point endTime, bool isRead, uint16_t numThread, File_t type) = 0;
+	uint64_t do_test(const std::chrono::steady_clock::time_point endTime, bool isRead, uint8_t numThread, File_t type ) {
+		std::vector<std::future<int64_t>> procs;
+		switch(type) {
+			case FILE_DIRECT:
+				for(uint8_t i = 0; i < numThread; i++ ) procs.push_back(std::async(std::launch::async,[&]() { FileDirect myFile(fname.c_str()); return do_file(&myFile,endTime,isRead); } ));
+				break;
+			case FILE_BUFFERED:
+				for(uint8_t i = 0; i < numThread; i++ ) procs.push_back(std::async(std::launch::async,[&]() { FileBuffered myFile(fname.c_str()); return do_file(&myFile,endTime,isRead); } ));
+				break;
+			case FILE_UNBUFFERED:
+				for(uint8_t i = 0; i < numThread; i++ ) procs.push_back(std::async(std::launch::async,[&]() { FileUnbuffered myFile(fname.c_str()); return do_file(&myFile,endTime,isRead); } ));
+				break;
+		}
+		int64_t curRet;
+		uint64_t total = 0;
+		for( auto &iter : procs ) {
+			curRet = iter.get();
+			if(curRet == -1) return 0;
+			total += curRet;
+		}
+		return total / procs.size();
+	}
+	std::string do_testAsString(const std::chrono::steady_clock::time_point endTime, bool isRead, uint8_t numThread, File_t type ) {
+		std::vector<std::future<int64_t>> procs;
+		switch(type) {
+			case FILE_DIRECT:
+				for(uint8_t i = 0; i < numThread; i++ ) procs.push_back(std::async(std::launch::async,[&]() { FileDirect myFile(fname.c_str()); return do_file(&myFile,endTime,isRead); } ));
+				break;
+			case FILE_BUFFERED:
+				for(uint8_t i = 0; i < numThread; i++ ) procs.push_back(std::async(std::launch::async,[&]() { FileBuffered myFile(fname.c_str()); return do_file(&myFile,endTime,isRead); } ));
+				break;
+			case FILE_UNBUFFERED:
+				for(uint8_t i = 0; i < numThread; i++ ) procs.push_back(std::async(std::launch::async,[&]() { FileUnbuffered myFile(fname.c_str()); return do_file(&myFile,endTime,isRead); } ));
+				break;
+		}
+		int64_t curRet;
+		uint64_t total = 0;
+		std::ostringstream os;
+		for( auto &iter : procs ) {
+			curRet = iter.get();
+			os << ' ' << resultAsString(curRet);
+			if(curRet > 0) total += curRet;
+		}
+		os << ", avg=" << resultAsString(total / procs.size());
+		return os.str();
+	}
 	virtual void generateLocs(double percentUtil) = 0;
 	virtual void updateLocs(double percentChange) = 0;
 	int64_t cacheClear(const std::chrono::steady_clock::time_point endTime) {
@@ -76,29 +122,6 @@ public:
 protected:
 	std::string fname;
 	uint64_t fSize;
-
-	uint64_t do_test(const std::chrono::steady_clock::time_point endTime, bool isRead, uint16_t numThread, File_t type ) {
-		std::vector<std::future<int64_t>> procs;
-		switch(type) {
-			case FILE_DIRECT:
-				for(uint16_t i = 0; i < numThread; i++ ) procs.push_back(std::async(std::launch::async,[&]() { FileDirect myFile(fname.c_str()); return do_file(&myFile,endTime,isRead); } ));
-				break;
-			case FILE_BUFFERED:
-				for(uint16_t i = 0; i < numThread; i++ ) procs.push_back(std::async(std::launch::async,[&]() { FileBuffered myFile(fname.c_str()); return do_file(&myFile,endTime,isRead); } ));
-				break;
-			case FILE_UNBUFFERED:
-				for(uint16_t i = 0; i < numThread; i++ ) procs.push_back(std::async(std::launch::async,[&]() { FileUnbuffered myFile(fname.c_str()); return do_file(&myFile,endTime,isRead); } ));
-				break;
-		}
-		int64_t curRet;
-		uint64_t total = 0;
-		for(uint16_t i = 0; i < numThread; i++ ) {
-			curRet = procs[i].get();
-			if(curRet == -1) return 0;
-			total += curRet;
-		}
-		return total / numThread;
-	}
 };
 
 class Test_Throughput : public Test {
@@ -125,9 +148,8 @@ public:
 		return (chunksWritten*CHUNK_SIZE) / (std::chrono::duration_cast<std::chrono::milliseconds >(std::chrono::steady_clock::now() - startTime).count() / 1000.0);
 	}
 
-	virtual std::string do_testString(const std::chrono::steady_clock::time_point endTime, bool isRead, uint16_t numThread, File_t type) {
-		auto ret = do_test(endTime,isRead,numThread,type);
-		if(ret) { std::ostringstream os; os << ret << "MB/s"; return os.str(); }
+	virtual std::string resultAsString(int64_t res) {
+		if(res) { std::ostringstream os; os << res << "MB/s"; return os.str(); }
 		return "Failed";
 	}
 
@@ -225,9 +247,8 @@ public:
 		return chunksWritten / numTX;
 	}
 
-	virtual std::string do_testString(const std::chrono::steady_clock::time_point endTime, bool isRead, uint16_t numThread, File_t type) {
-		auto ret = do_test(endTime,isRead,numThread,type);
-		if(ret) { std::ostringstream os; os << ret << "us"; return os.str(); }
+	virtual std::string resultAsString(int64_t res) {
+		if(res) { std::ostringstream os; os << (res / 1000.0) << "ms"; return os.str(); }
 		return "Failed";
 	}
 
