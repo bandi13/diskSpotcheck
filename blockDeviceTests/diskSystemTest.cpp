@@ -42,7 +42,7 @@ void usage(char *progName) {
 	cout << "\t-c <sizeInMB>  => Do random reads until 'sizeInMB' has been read to clear caches" << endl;
 	cout << "\t-w <minutes>   => Write for 'minutes' minutes" << endl;
 	cout << "\t-r <minutes>   => Read for 'minutes' minutes" << endl;
-	cout << "\t-p <percent>   => Set the percent of disk to be accessed" << endl;
+	cout << "\t-p <percent>   => Set the percent of disk to be accessed (default=1.0%)" << endl;
 	cout << "\t-P <percent>   => Update 'percent'% of the access locations" << endl;
 	cout << "\t-t <num>       => Use 'num' threads in transactions" << endl;
 	cout << "\t-b             => Set BUFFERED file access mode" << endl;
@@ -66,7 +66,7 @@ int main( int argc, char* argv[] ) {
 	}
 
 	uint8_t numThreads = 10;
-	double percent = 10;
+	double percent = 1.0;
 	Test::File_t type = Test::FILE_UNBUFFERED;
 	std::unique_ptr<Test> test = make_unique<Test_Throughput>(argv[argc-1]);
 	test->generateLocs(percent);

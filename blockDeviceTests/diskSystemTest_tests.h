@@ -127,7 +127,7 @@ public:
 
 	virtual std::string do_testString(const std::chrono::steady_clock::time_point endTime, bool isRead, uint16_t numThread, File_t type) {
 		auto ret = do_test(endTime,isRead,numThread,type);
-		if(ret) return ret + "MB/s";
+		if(ret) { std::ostringstream os; os << ret << "MB/s"; return os.str(); }
 		return "Failed";
 	}
 
@@ -227,7 +227,7 @@ public:
 
 	virtual std::string do_testString(const std::chrono::steady_clock::time_point endTime, bool isRead, uint16_t numThread, File_t type) {
 		auto ret = do_test(endTime,isRead,numThread,type);
-		if(ret) return ret + "us";
+		if(ret) { std::ostringstream os; os << ret << "us"; return os.str(); }
 		return "Failed";
 	}
 
