@@ -235,12 +235,11 @@ protected:
 	int64_t do_file(File *file, const std::chrono::steady_clock::time_point endTime, bool isRead) override {
 		if (file->getSize() == 0) { cerr << "error opening file" << endl; return -1; }
 		std::ranlux48_base rngGen(rand());
-		uint64_t vectIdx;
+		uint64_t vectIdx = rngGen() % locations.size();
 		uint64_t chunksWritten = 0;
 		uint64_t numTX = 0;
 		auto startTime = std::chrono::steady_clock::now();
 		while ((startTime = std::chrono::steady_clock::now()) < endTime) {
-			vectIdx = rngGen() % locations.size();
 			if (isRead) {
 				if (file->read((char *) testPtr.get(), (ssize_t) locations[vectIdx].numChunks * CHUNK_SIZE, locations[vectIdx].offset) != ((ssize_t) locations[vectIdx].numChunks * CHUNK_SIZE))
 				{ cerr << "error: " << strerror(errno) << endl; return -1; }
